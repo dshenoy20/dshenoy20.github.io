@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dshenoy20</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;1,300;1,500&family=Jost:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{
+    --ink:#0b0a09;
+    --ink-2:#15130f;
+    --paper:#efe8da;
+    --muted:#9a8f7c;
+    --brass:#c8a86a;
+    --ease:cubic-bezier(.22,.8,.18,1);
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+
+html{ -webkit-text-size-adjust:100%; }
+
+body{
+    min-height:100svh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:clamp(28px,6vh,64px) clamp(20px,5vw,48px);
+    background:
+        radial-gradient(120% 90% at 50% 12%, rgba(200,168,106,0.10), transparent 55%),
+        linear-gradient(160deg, var(--ink) 0%, var(--ink-2) 100%);
+    color:var(--paper);
+    font-family:"Jost", sans-serif;
+    overflow-x:hidden;
+    position:relative;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+}
+
+/* ambient warm light — slow drift + parallax */
+.ambient{
+    position:fixed;
+    inset:-25%;
+    z-index:0;
+    pointer-events:none;
+    background:
+        radial-gradient(closest-side, rgba(200,168,106,0.16), rgba(200,168,106,0.04) 45%, transparent 70%);
+    filter:blur(10px);
+    transform:translate3d(var(--px,0px), var(--py,0px), 0);
+    will-change:transform;
+}
+.ambient::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:inherit;
+    animation:breathe 26s var(--ease) infinite alternate;
+}
+@keyframes breathe{
+    from{ transform:translate(-4%,-3%) scale(1); opacity:.85; }
+    to{ transform:translate(4%,4%) scale(1.18); opacity:1; }
+}
+
+/* fine grain + vignette for depth */
+.grain,.vignette{
+    position:fixed; inset:0; z-index:2; pointer-events:none;
+}
+.grain{
+    opacity:.04;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.vignette{
+    background:radial-gradient(120% 120% at 50% 45%, transparent 55%, rgba(0,0,0,0.45) 100%);
+}
+
+/* scroll energy → warm color grading */
+.grade{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:radial-gradient(85% 65% at 50% 42%, rgba(200,168,106,0.22), transparent 62%);
+    opacity:var(--energy,0);
+}
+
+/* click → warm light bloom */
+.bloom{
+    position:fixed; z-index:0; width:46vmax; height:46vmax;
+    margin:-23vmax 0 0 -23vmax; border-radius:50%; pointer-events:none;
+    background:radial-gradient(closest-side, rgba(200,168,106,0.30), rgba(200,168,106,0.07) 40%, transparent 70%);
+    animation:bloom 1s var(--ease) forwards;
+}
+@keyframes bloom{
+    0%{ transform:scale(.2); opacity:0; }
+    18%{ opacity:.9; }
+    100%{ transform:scale(1); opacity:0; }
+}
+
+.stage{
+    perspective:1100px;
+    width:100%;
+    display:flex;
+    justify-content:center;
+}
+.content{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width:760px;
+    text-align:center;
+    transform-style:preserve-3d;
+    transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateZ(var(--tz,0px));
+    will-change:transform;
+}
+
+.name{
+    font-family:"Cormorant Garamond", serif;
+    font-weight:300;
+    font-size:clamp(3.4rem,12vw,7rem);
+    line-height:.95;
+    letter-spacing:.01em;
+    margin-bottom:clamp(22px,3.4vh,38px);
+    color:var(--paper);                 /* always-visible fallback */
+    opacity:0;
+    transition:opacity 1.15s var(--ease) .2s, letter-spacing .7s var(--ease), filter .7s var(--ease);
+}
+.name:hover{ letter-spacing:.05em; filter:drop-shadow(0 0 22px rgba(200,168,106,.35)); }
+
+/* metallic shimmer only where clipping text to a gradient is supported */
+@supports ((-webkit-background-clip:text) or (background-clip:text)){
+    .name{
+        background:linear-gradient(100deg,
+            var(--paper) 0%, var(--paper) 34%,
+            #fff6e3 45%, #e9d09a 50%, #fff6e3 55%,
+            var(--paper) 66%, var(--paper) 100%);
+        background-size:240% 100%;
+        background-position:50% 0;
+        -webkit-background-clip:text;
+        background-clip:text;
+        color:transparent;
+        -webkit-text-fill-color:transparent;
+        animation:shimmer 8s var(--ease) infinite;
+        will-change:background-position;
+    }
+    @keyframes shimmer{
+        0%{ background-position:8% 0; }
+        50%{ background-position:92% 0; }
+        100%{ background-position:8% 0; }
+    }
+    body.pointer .name{ animation:none; background-position:var(--shine,50%) 0; }
+}
+
+.eyebrow{
+    font-weight:400;
+    font-size:clamp(.62rem,1.5vw,.76rem);
+    letter-spacing:.34em;
+    text-transform:uppercase;
+    color:var(--brass);
+    margin-bottom:clamp(10px,1.4vh,14px);
+}
+.creds{
+    font-weight:300;
+    font-size:clamp(.6rem,1.4vw,.72rem);
+    letter-spacing:.26em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:clamp(16px,2.2vh,22px);
+}
+
+.interests{
+    font-weight:300;
+    font-size:clamp(.74rem,1.8vw,.9rem);
+    letter-spacing:.14em;
+    color:var(--muted);
+}
+
+.rule{
+    width:clamp(86px,18vw,150px);
+    height:1px;
+    margin:clamp(42px,7.5vh,78px) auto;
+    background:linear-gradient(90deg, transparent, rgba(200,168,106,.55), transparent);
+    transform:scaleX(0);
+    transform-origin:center;
+    position:relative;
+}
+.rule::after{
+    content:"";
+    position:absolute;
+    top:50%; left:50%;
+    width:5px; height:5px;
+    background:var(--brass);
+    transform:translate(-50%,-50%) rotate(45deg) scale(0);
+    box-shadow:0 0 14px rgba(200,168,106,.5);
+    transition:transform .8s var(--ease) .9s;
+}
+
+.quote{
+    font-family:"Cormorant Garamond", serif;
+    font-style:italic;
+    font-weight:300;
+    font-size:clamp(1.2rem,3vw,1.85rem);
+    line-height:1.5;
+    color:var(--paper);
+    max-width:clamp(17rem,80vw,36rem);
+    margin:0 auto;
+}
+
+.footer{
+    margin-top:clamp(48px,8vh,84px);
+    font-weight:300;
+    font-size:clamp(.6rem,1.3vw,.72rem);
+    letter-spacing:.32em;
+    text-transform:uppercase;
+    color:var(--muted);
+    animation:pulse 7s ease-in-out infinite;
+}
+@keyframes pulse{ 0%,100%{ opacity:.55; } 50%{ opacity:.9; } }
+
+/* entrance choreography */
+.rv{ opacity:0; transform:translateY(20px); }
+.loaded .rv{ animation:rise 1.15s var(--ease) forwards; }
+.loaded .eyebrow{ animation-delay:.4s; }
+.loaded .creds{ animation-delay:.5s; }
+.loaded .interests{ animation-delay:.62s; }
+.loaded .rule.rv{ opacity:0; animation:draw 1.15s var(--ease) .8s forwards; }
+.loaded .quote{ animation-delay:1s; }
+.loaded .footer{ animation-delay:1.2s; }
+.loaded .name{ opacity:1; }
+
+@keyframes rise{ to{ opacity:1; transform:translateY(0); } }
+@keyframes draw{ to{ opacity:1; transform:scaleX(1); } }
+
+@media (prefers-reduced-motion: reduce){
+    .ambient::before{ animation:none; }
+    .footer{ animation:none; opacity:.7; }
+    .name{ animation:none !important; background-position:50% 0; transition:none; opacity:1; }
+    .content{ transform:none !important; }
+    .grade,.bloom{ display:none !important; }
+    .rv{ opacity:1; transform:none; animation:none !important; }
+    .rule{ transform:scaleX(1); opacity:1; animation:none !important; }
+    .rule::after{ transform:translate(-50%,-50%) rotate(45deg) scale(1); }
+}
+</style>
+</head>
+<body>
+<div class="ambient" aria-hidden="true"></div>
+<div class="grade" aria-hidden="true"></div>
+
+<div class="stage">
+<main class="content">
+    <h1 class="name">dshenoy20</h1>
+    <p class="eyebrow rv">Product Manager.</p>
+    <p class="creds rv">IIM Indore. NIT Calicut.</p>
+    <p class="interests rv">tech. human behaviour. cricket. music. life.</p>
+    <div class="rule rv" aria-hidden="true"></div>
+    <blockquote class="quote rv">Knowing what problem to solve is more valuable than being able to solve the problem.</blockquote>
+    <p class="footer rv">currently building stuff</p>
+</main>
+</div>
+
+<div class="grain" aria-hidden="true"></div>
+<div class="vignette" aria-hidden="true"></div>
+
+<script>
+(function(){
+    var body = document.body, root = document.documentElement;
+
+    // entrance
+    requestAnimationFrame(function(){ body.classList.add('loaded'); });
+
+    var reduce   = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+    var amb = document.querySelector('.ambient');
+    var content = document.querySelector('.content');
+
+    var t = { px:0, py:0, rx:0, ry:0, shine:50 };
+    var c = { px:0, py:0, rx:0, ry:0, shine:50 };
+    var energy = 0;     // scroll-driven warmth + depth (0..1)
+    var sweep  = -1;    // click-triggered highlight sweep (-1 = idle, else 0..1)
+
+    // hover: ambient light, perspective tilt, metallic highlight track
+    if(canHover && !reduce){
+        body.classList.add('pointer');
+        window.addEventListener('pointermove', function(e){
+            var nx = (e.clientX / window.innerWidth)  - 0.5;
+            var ny = (e.clientY / window.innerHeight) - 0.5;
+            t.px = nx * 28;  t.py = ny * 28;
+            t.ry = nx * 6;   t.rx = -ny * 4.5;
+            t.shine = 50 + nx * 64;
+        }, {passive:true});
+    }
+
+    // CLICK / TAP: a warm light bloom from the point + a single shimmer sweep across the name
+    if(!reduce){
+        window.addEventListener('pointerdown', function(e){
+            var b = document.createElement('span');
+            b.className = 'bloom';
+            b.style.left = e.clientX + 'px';
+            b.style.top  = e.clientY + 'px';
+            body.appendChild(b);
+            b.addEventListener('animationend', function(){ b.remove(); });
+            sweep = 0;                 // light up the name
+            energy = Math.min(1, energy + 0.18);
+        }, {passive:true});
+    }
+
+    // SCROLL / WHEEL / TOUCH: feed "energy" → warm color grading + the hero leans forward
+    function addEnergy(d){ energy = Math.min(1, energy + Math.min(Math.abs(d)/900, 0.12)); }
+    if(!reduce){
+        window.addEventListener('wheel', function(e){ addEnergy(e.deltaY); }, {passive:true});
+        var ty = null;
+        window.addEventListener('touchstart', function(e){ ty = e.touches[0].clientY; }, {passive:true});
+        window.addEventListener('touchmove', function(e){
+            if(ty != null){ addEnergy(ty - e.touches[0].clientY); ty = e.touches[0].clientY; }
+        }, {passive:true});
+    }
+
+    function loop(){
+        for(var k in t){ c[k] += (t[k] - c[k]) * 0.06; }
+
+        var shineVal = c.shine;
+        if(sweep >= 0){
+            sweep += 0.045;
+            var p = sweep < 0.5 ? 2*sweep*sweep : 1 - Math.pow(-2*sweep + 2, 2)/2; // easeInOut
+            shineVal = 8 + p * 84;
+            if(sweep >= 1) sweep = -1;
+        }
+
+        energy *= 0.95;  // slow decay back to calm
+        root.style.setProperty('--energy', energy.toFixed(3));
+
+        amb.style.setProperty('--px', c.px.toFixed(2) + 'px');
+        amb.style.setProperty('--py', c.py.toFixed(2) + 'px');
+        content.style.setProperty('--rx', c.rx.toFixed(2) + 'deg');
+        content.style.setProperty('--ry', c.ry.toFixed(2) + 'deg');
+        content.style.setProperty('--tz', (energy * 46).toFixed(2) + 'px');
+
+        if(body.classList.contains('pointer') || sweep >= 0){
+            content.style.setProperty('--shine', shineVal.toFixed(1) + '%');
+        }
+        requestAnimationFrame(loop);
+    }
+    loop();
+})();
+</script>
+</body>
+</html>
